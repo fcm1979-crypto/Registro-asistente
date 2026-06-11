@@ -16,6 +16,57 @@ import { validarLista } from './nif.js';
 import { DEFECTOS, CATEGORIAS, buscarDefectos } from './defectos.js';
 
 // ══════════════════════════════════════════════
+// ROBUSTEZ: LOGGER + FETCH TIMEOUT
+// ══════════════════════════════════════════════
+
+const RA_LOG_KEY = 'ra_log';
+const RA_LOG_MAX = 150; // entradas máximas en el buffer circular
+
+/**
+ * Logger centralizado. Escribe en consola y persiste en localStorage
+ * para facilitar el soporte/depuración sin telemetría externa.
+ * @param {'info'|'warn'|'error'} nivel
+ * @param {string} msg
+ * @param {*} [datos]
+ */
+function raLog(nivel, msg, datos) {
+  const ts = new Date().toISOString().slice(11, 19); // HH:MM:SS
+  const entrada = { ts, nivel, msg, ...(datos !== undefined ? { datos } : {}) };
+  // Consola
+  if      (nivel === 'error') console.error(`[RA ${ts}] ${msg}`, datos ?? '');
+  else if (nivel === 'warn')  console.warn (`[RA ${ts}] ${msg}`, datos ?? '');
+  else                        console.log  (`[RA ${ts}] ${msg}`, datos ?? '');
+  // Buffer circular en localStorage (sin envío externo)
+  try {
+    const logs = JSON.parse(localStorage.getItem(RA_LOG_KEY) || '[]');
+    logs.push(entrada);
+    if (logs.length > RA_LOG_MAX) logs.splice(0, logs.length - RA_LOG_MAX);
+    localStorage.setItem(RA_LOG_KEY, JSON.stringify(logs));
+  } catch (_) { /* no bloquear si localStorage está lleno */ }
+}
+
+/**
+ * Wrapper de fetch con timeout configurable.
+ * Lanza AbortError si supera el límite de tiempo.
+ * @param {string} url
+ * @param {RequestInit} [opts]
+ * @param {number} [ms=12000] timeout en milisegundos
+ */
+function fetchTimeout(url, opts = {}, ms = 12000) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { ...opts, signal: ctrl.signal })
+    .finally(() => clearTimeout(timer))
+    .catch(err => {
+      if (err.name === 'AbortError') {
+        raLog('warn', 'fetch timeout', { url, ms });
+        throw new Error(`La consulta tardó demasiado (>${ms / 1000}s). Comprueba la conexión.`);
+      }
+      throw err;
+    });
+}
+
+// ══════════════════════════════════════════════
 // SISTEMA DE LICENCIAS
 // ══════════════════════════════════════════════
 
@@ -106,7 +157,7 @@ function comprobarLicencia() {
           } else if (resp && resp.valid) {
             localStorage.setItem(LICENCIA_CHECK_TS, String(Date.now()));
           }
-        }).catch(() => { /* sin conexión, dejamos pasar */ });
+        }).catch(err => { raLog('warn', 'Revalidación licencia fallida (sin conexión)', err?.message); });
       }, 3000); // espera 3s para que el SW esté despierto
     }
     return;
@@ -229,6 +280,7 @@ async function cargarDocComp(file, slot) {
     marcarZonaCargada(slot, file.name);
     estadoComp.className = 'estado';
   } catch (err) {
+    raLog('error', 'Comparador: fallo al cargar documento', { slot, file: file.name, msg: err.message });
     estadoComp.className      = 'estado error';
     estadoCompTxt.textContent = 'Error: ' + err.message;
   }
@@ -325,12 +377,13 @@ async function cargarDesdeURL(url) {
   vacioEl.style.display = 'none';
   resultadoEl.style.display = 'none';
   try {
-    var response = await fetch(url);
+    var response = await fetchTimeout(url, {}, 15000);
     if (!response.ok) throw new Error('No se pudo descargar el PDF (HTTP ' + response.status + ')');
     var buffer = await response.arrayBuffer();
     var texto = await extraerTexto({ data: buffer });
     await procesarTexto(texto, url.split('/').pop());
   } catch (err) {
+    raLog('error', 'cargarDesdeURL falló', { url, msg: err.message });
     setEstado('error', 'Error al cargar el PDF: ' + err.message);
     vacioEl.style.display = 'block';
   }
@@ -346,6 +399,7 @@ async function cargarDesdeFile(file) {
     var texto = await extraerTexto({ data: buffer });
     await procesarTexto(texto, file.name);
   } catch (err) {
+    raLog('error', 'cargarDesdeFile falló', { file: file.name, msg: err.message });
     setEstado('error', 'Error al leer el PDF: ' + err.message);
     vacioEl.style.display = 'block';
   }
@@ -353,9 +407,19 @@ async function cargarDesdeFile(file) {
 
 // ── Flujo principal de análisis ───────────────
 async function procesarTexto(texto, filename) {
+  // Guard: PDF sin texto extraíble (escaneado sin OCR o protegido)
+  const textoLimpio = (texto || '').trim();
+  if (textoLimpio.length < 80) {
+    raLog('warn', 'PDF sin texto suficiente', { chars: textoLimpio.length, file: filename });
+    setEstado('error', 'El PDF no contiene texto extraíble. ¿Es un documento escaneado sin OCR?');
+    vacioEl.style.display = 'block';
+    return;
+  }
+
   setEstado('procesando', 'Analizando escritura...');
   await tick();
 
+  raLog('info', 'Analizando escritura', { file: filename, chars: textoLimpio.length });
   var analisis = parseEscritura(texto);
   if (analisis.error) {
     setEstado('error', analisis.error);

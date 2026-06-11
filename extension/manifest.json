@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Registro de la Propiedad Asistente",
   "short_name": "RP Asistente",
-  "version": "0.3.4",
+  "version": "0.3.6",
   "description": "Asistente para Registros de la Propiedad. Analiza escrituras, cruza Catastro, valida GML y calcula plazos. Prueba gratuita 30 días.",
   "permissions": [
     "sidePanel",

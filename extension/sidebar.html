@@ -1034,6 +1034,191 @@
     .gml-lindero-dir { font-weight: 700; min-width: 40px; color: #555; text-transform: uppercase; }
     .gml-lindero-val { color: #1a1a2e; }
     .gml-lindero-vacio { color: #bbb; font-style: italic; }
+
+  /* ═══════════════════════════════════════════════════════
+     UX v0.3.5 — Design System Enhancement
+     Bloque de mejoras visuales no destructivas
+     ═══════════════════════════════════════════════════════ */
+
+  :root {
+    --navy:       #1e3a5f;
+    --navy-dark:  #132840;
+    --navy-mid:   #1a3356;
+    --navy-light: #2a5080;
+    --accent:     #4fc3f7;
+    --bg:         #edf0f7;
+    --card:       #ffffff;
+    --border:     #dde3f0;
+    --text:       #1e2b40;
+    --muted:      #5a6a8a;
+    --micro:      #94a3b8;
+    --green:      #16a34a;
+    --orange:     #d97706;
+    --red:        #dc2626;
+    --r:          10px;
+    --sh:         0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+    --sh-md:      0 3px 10px rgba(0,0,0,.09);
+  }
+
+  /* ── Base ── */
+  body {
+    font-size: 13px;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+  }
+
+  /* ── Header con gradiente y barra de acento ── */
+  header {
+    background: linear-gradient(150deg, var(--navy-dark) 0%, var(--navy) 100%);
+    padding: 13px 14px 10px;
+    border-bottom: 3px solid var(--accent);
+    gap: 10px;
+  }
+  header .logo { font-size: 20px; }
+  header h1    { font-size: 14px; letter-spacing: .03em; }
+  header .subtitle { font-size: 10.5px; opacity: .75; }
+
+  /* ── Tabs: grid 3 × 2 para mejor legibilidad ── */
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--navy-dark);
+    padding: 6px 8px 8px;
+    gap: 4px;
+  }
+  .tab-btn {
+    padding: 7px 3px;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 7px;
+    border-bottom: none;
+    color: rgba(255,255,255,.45);
+    transition: background .15s, color .15s;
+    letter-spacing: .02em;
+  }
+  .tab-btn:hover:not(.activa) {
+    background: rgba(255,255,255,.07);
+    color: rgba(255,255,255,.75);
+  }
+  .tab-btn.activa {
+    background: rgba(79,195,247,.17);
+    color: var(--accent);
+    border-bottom: none;
+  }
+
+  /* ── Zona de carga ── */
+  .upload-zone {
+    margin: 14px 12px;
+    border-radius: 12px;
+    border-width: 2px;
+  }
+  .upload-zone .icon { font-size: 28px; margin-bottom: 6px; }
+  .upload-zone p     { font-size: 12px; }
+
+  /* ── Estado / spinner ── */
+  .estado { font-size: 12px; border-radius: 9px; }
+
+  /* ── Secciones / Cards ── */
+  .seccion {
+    border-radius: var(--r);
+    border-color: var(--border);
+    box-shadow: var(--sh);
+    margin: 0 12px 12px;
+  }
+  .seccion-header {
+    font-size: 10.5px;
+    padding: 10px 14px;
+    color: var(--muted);
+    background: #f7f9fd;
+    border-radius: var(--r) var(--r) 0 0;
+  }
+
+  /* ── Campos ── */
+  .campo         { padding: 9px 14px; }
+  .campo-label   { font-size: 10.5px; min-width: 118px; color: var(--micro); }
+  .campo-valor   { font-size: 12.5px; }
+
+  /* ── Badges ── */
+  .badge-tipo { font-size: 11.5px; padding: 4px 12px; }
+
+  /* ── Alertas ── */
+  .alerta { font-size: 11.5px; border-radius: 8px; padding: 9px 12px; }
+
+  /* ── Botones principales ── */
+  .btn-comparar {
+    border-radius: 9px;
+    padding: 10px;
+    font-size: 12.5px;
+    background: linear-gradient(135deg, var(--navy-light), var(--navy));
+    box-shadow: 0 2px 8px rgba(30,58,95,.25);
+    transition: box-shadow .2s, transform .1s;
+  }
+  .btn-comparar:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3a6090, var(--navy-light));
+    box-shadow: 0 4px 12px rgba(30,58,95,.35);
+    transform: translateY(-1px);
+  }
+  .btn-comparar:active { transform: translateY(0); }
+
+  .btn-borrador {
+    border-radius: 9px;
+    padding: 10px;
+    font-size: 12px;
+    transition: background .2s, border-color .2s;
+  }
+
+  .btn-mapa  { border-radius: 7px; padding: 6px 12px; font-size: 11.5px; }
+
+  /* ── Check items (calificación) ── */
+  .check-item    { padding: 10px 14px; }
+  .check-titulo  { font-size: 12px; }
+  .check-detalle { font-size: 10.5px; }
+  .btn-check-mini { font-size: 10.5px; padding: 5px 10px; border-radius: 7px; }
+
+  /* ── Plazos ── */
+  .plazo-input-group { margin: 12px 12px 0; border-radius: var(--r); }
+  .plazo-input-group input[type="date"] { font-size: 12.5px; padding: 8px 10px; border-radius: 7px; }
+
+  /* ── Obs textarea ── */
+  .obs-area { padding: 12px 14px 14px; }
+  .obs-textarea { font-size: 12px; border-radius: 8px; min-height: 80px; }
+
+  /* ── Modal ── */
+  .modal-header  { font-size: 13px; padding: 13px 16px; }
+  .modal-box     { border-radius: 16px 16px 0 0; }
+  .btn-accion    { font-size: 12px; padding: 9px; border-radius: 8px; }
+  .modal-texto   { font-size: 11px; }
+
+  /* ── Estado vacío ── */
+  #vacio       { padding: 44px 24px; }
+  #vacio .icon { font-size: 42px; }
+
+  /* ── Panel herramientas (NIF + Defectos) ── */
+  .def-lista-item { border-radius: 9px; }
+
+  /* ── GML concordancia resultado ── */
+  #gmlConcResult { font-size: 12px; border-radius: 8px; }
+
+  /* ── Inputs y textareas generales ── */
+  input[type="text"],
+  input[type="date"],
+  textarea,
+  select {
+    font-size: 12.5px !important;
+    border-radius: 7px;
+  }
+
+  /* ── Pantalla licencia ── */
+  #pantallaLicencia h2 { font-size: 16px; }
+  #pantallaLicencia p  { font-size: 12.5px; }
+
+  /* ── Scrollbar más fina ── */
+  ::-webkit-scrollbar       { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #c5cde0; border-radius: 99px; }
+  ::-webkit-scrollbar-thumb:hover { background: #8a94ae; }
+
   </style>
 </head>
 <body>
