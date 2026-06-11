@@ -119,6 +119,12 @@ function comprobarLicencia() {
     if (bannerTrial) {
       bannerTrial.style.display = 'flex';
       if (trialDiasEl) trialDiasEl.textContent = diasRestantes;
+      // Urgencia visual cuando quedan ≤7 días
+      if (diasRestantes <= 7) {
+        bannerTrial.style.background = '#dc2626'; // rojo urgente
+        const trialIconEl = document.getElementById('trialIcon');
+        if (trialIconEl) trialIconEl.textContent = '⚠️';
+      }
     }
   } else {
     // Prueba caducada → mostrar pantalla de activación
