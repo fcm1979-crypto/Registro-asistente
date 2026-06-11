@@ -11,7 +11,9 @@ import { generarBorrador } from './notaCalificacion.js';
 import { calcularPlazos, calcularPlazosDefecto, getDocumentacionComplementaria, diasRestantes, formatFecha } from './plazos.js';
 import { calcularHonorarios } from './arancel.js';
 import { abrirFacturaPDF } from './factura.js';
-import { parseGML, validarGML, cruzarConParcelario, bboxConsulta, generarInformeGML, dibujarParcelasSVG, escaparHTML } from './gml.js';
+import { parseGML, validarGML, cruzarConParcelario, bboxConsulta, generarInformeGML, dibujarParcelasSVG, escaparHTML, concordanciaSuperficie, extraerLinderos } from './gml.js';
+import { validarLista } from './nif.js';
+import { DEFECTOS, CATEGORIAS, buscarDefectos } from './defectos.js';
 
 // ══════════════════════════════════════════════
 // SISTEMA DE LICENCIAS
@@ -175,7 +177,7 @@ const resultadoEl = document.getElementById('resultado');
 
 // ── Pestañas ──────────────────────────────────
 function cambiarTab(tab) {
-  ['analisis','comparador','plazos','gml','factura'].forEach(function (t) {
+  ['analisis','comparador','plazos','gml','factura','herramientas'].forEach(function (t) {
     document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1))
       .classList.toggle('activo', t === tab);
     document.getElementById('tab'   + t.charAt(0).toUpperCase() + t.slice(1))
@@ -183,11 +185,12 @@ function cambiarTab(tab) {
   });
   if (tab === 'factura') actualizarPanelFactura();
 }
-document.getElementById('tabAnalisis').addEventListener('click',   function () { cambiarTab('analisis'); });
-document.getElementById('tabComparador').addEventListener('click', function () { cambiarTab('comparador'); });
-document.getElementById('tabPlazos').addEventListener('click',     function () { cambiarTab('plazos'); });
-document.getElementById('tabGml').addEventListener('click',        function () { cambiarTab('gml'); });
-document.getElementById('tabFactura').addEventListener('click',    function () { cambiarTab('factura'); });
+document.getElementById('tabAnalisis').addEventListener('click',       function () { cambiarTab('analisis'); });
+document.getElementById('tabComparador').addEventListener('click',     function () { cambiarTab('comparador'); });
+document.getElementById('tabPlazos').addEventListener('click',         function () { cambiarTab('plazos'); });
+document.getElementById('tabGml').addEventListener('click',            function () { cambiarTab('gml'); });
+document.getElementById('tabFactura').addEventListener('click',        function () { cambiarTab('factura'); });
+document.getElementById('tabHerramientas').addEventListener('click',   function () { cambiarTab('herramientas'); });
 
 // ── Comparador ────────────────────────────────
 var docA = null;
@@ -1086,4 +1089,165 @@ document.getElementById('btnInformeGml').addEventListener('click', function () {
   if (!win) {
     alert('El navegador bloqueó la ventana emergente.\nPermite ventanas emergentes para esta extensión e inténtalo de nuevo.');
   }
+});
+
+// ── Concordancia GML ↔ descripción literal ────────────────────
+document.getElementById('btnGmlConc').addEventListener('click', function () {
+  if (!_gmlParseado || !_gmlParseado.parcelas.length) {
+    var r = document.getElementById('gmlConcResult');
+    r.className = 'gml-conc-resultado aviso';
+    r.textContent = 'Carga primero un fichero GML.';
+    r.style.display = 'block';
+    return;
+  }
+
+  // Superficie total del GML (suma de parcelas)
+  var supGML = _gmlParseado.parcelas.reduce(function (sum, p) {
+    return sum + (p.areaCalculada || 0);
+  }, 0);
+
+  var rawEsc = document.getElementById('gmlConcSupEsc').value;
+  var res    = concordanciaSuperficie(supGML, rawEsc);
+
+  var resEl = document.getElementById('gmlConcResult');
+  resEl.className = 'gml-conc-resultado ' + res.nivel;
+  resEl.innerHTML =
+    '<strong>' + res.msg + '</strong>' +
+    (res.supEsc !== null
+      ? '<br><small>GML: ' + supGML.toFixed(2) + ' m²  ·  Escritura: ' + res.supEsc.toFixed(2) + ' m²</small>'
+      : '');
+  resEl.style.display = 'block';
+
+  // Extraer linderos del texto
+  var textoLind = document.getElementById('gmlConcLinderos').value;
+  var lind = extraerLinderos(textoLind);
+  var hayLind = Object.values(lind).some(Boolean);
+  var lindRes = document.getElementById('gmlLinderosResult');
+  if (hayLind) {
+    var dirs = { norte: 'Norte', sur: 'Sur', este: 'Este', oeste: 'Oeste' };
+    document.getElementById('gmlLinderosFila').innerHTML = Object.entries(dirs).map(function (en) {
+      var dir = en[0], label = en[1];
+      var val = lind[dir];
+      return '<div class="gml-lindero-fila">' +
+        '<span class="gml-lindero-dir">' + label + '</span>' +
+        (val
+          ? '<span class="gml-lindero-val">' + val + '</span>'
+          : '<span class="gml-lindero-vacio">No detectado</span>') +
+        '</div>';
+    }).join('');
+    lindRes.style.display = 'block';
+  } else {
+    lindRes.style.display = 'none';
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// PANEL HERRAMIENTAS — Validador NIF/NIE/CIF + Defectos
+// ══════════════════════════════════════════════════════════════
+
+// ── Validador NIF / NIE / CIF ─────────────────────────────────
+function ejecutarValidacionNif() {
+  var texto = document.getElementById('nifInput').value;
+  if (!texto.trim()) return;
+  var resultados = validarLista(texto);
+  var resEl = document.getElementById('nifResultados');
+
+  resEl.innerHTML = resultados.map(function (r) {
+    var cls = r.valido ? 'valido' : 'invalido';
+    var etiq = r.valido ? '✓ ' + r.tipo : '✗ ' + (r.tipo || '?');
+    return '<div class="nif-fila">' +
+      '<span class="nif-id">' + r.id + '</span>' +
+      '<span class="nif-badge ' + cls + '">' + etiq + '</span>' +
+      '<span class="nif-msg">' + r.msg + '</span>' +
+      '</div>';
+  }).join('');
+
+  resEl.style.display = resultados.length ? 'block' : 'none';
+}
+
+document.getElementById('btnNifValidar').addEventListener('click', ejecutarValidacionNif);
+document.getElementById('nifInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') ejecutarValidacionNif();
+});
+
+// ── Biblioteca de defectos tipificados ───────────────────────
+var _defCatActiva = '';
+var _defBusqueda  = '';
+
+function renderDefCats() {
+  var el = document.getElementById('defCats');
+  el.innerHTML = CATEGORIAS.map(function (c) {
+    var activa = (c.id === _defCatActiva) ? ' activa' : '';
+    return '<button class="def-cat-btn' + activa + '" data-cat="' + c.id + '">' + c.label + '</button>';
+  }).join('');
+  el.querySelectorAll('.def-cat-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      _defCatActiva = btn.dataset.cat;
+      renderDefCats();
+      renderDefLista();
+    });
+  });
+}
+
+function renderDefLista() {
+  var lista = buscarDefectos(_defBusqueda, _defCatActiva);
+  var el = document.getElementById('defLista');
+  if (!lista.length) {
+    el.innerHTML = '<div class="def-vacio">No se encontraron defectos para esa búsqueda.</div>';
+    return;
+  }
+  el.innerHTML = lista.map(function (d) {
+    var dot = d.suspende ? 'suspende' : 'nosusp';
+    var dotTitle = d.suspende ? 'Defecto suspensivo' : 'Advertencia / no suspensivo';
+    return '<div class="def-item" data-id="' + d.id + '">' +
+      '<div class="def-item-header">' +
+        '<div class="def-suspende ' + dot + '" title="' + dotTitle + '"></div>' +
+        '<span class="def-titulo">' + d.titulo + '</span>' +
+        '<span class="def-fund">' + d.fundamento + '</span>' +
+      '</div>' +
+      '<div class="def-body" id="defbody_' + d.id + '">' +
+        '<div class="def-texto">' + d.texto.replace(/</g, '&lt;') + '</div>' +
+        '<div class="def-acciones">' +
+          '<button class="btn-def-copiar" data-id="' + d.id + '">📋 Copiar texto</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  // Toggle expand/collapse
+  el.querySelectorAll('.def-item-header').forEach(function (hdr) {
+    hdr.addEventListener('click', function () {
+      var id  = hdr.closest('.def-item').dataset.id;
+      var body = document.getElementById('defbody_' + id);
+      if (body) body.classList.toggle('abierto');
+    });
+  });
+
+  // Copiar al portapapeles
+  el.querySelectorAll('.btn-def-copiar').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var defecto = DEFECTOS.find(function (d) { return d.id === btn.dataset.id; });
+      if (!defecto) return;
+      navigator.clipboard.writeText(defecto.texto).then(function () {
+        btn.textContent = '✓ Copiado';
+        btn.classList.add('copiado');
+        setTimeout(function () {
+          btn.textContent = '📋 Copiar texto';
+          btn.classList.remove('copiado');
+        }, 2000);
+      }).catch(function () {
+        btn.textContent = 'Error al copiar';
+      });
+    });
+  });
+}
+
+// Inicializar panel herramientas
+renderDefCats();
+renderDefLista();
+
+document.getElementById('defBuscar').addEventListener('input', function () {
+  _defBusqueda = this.value;
+  renderDefLista();
 });

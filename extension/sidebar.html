@@ -879,6 +879,161 @@
       font-weight: 700;
       text-decoration: none;
     }
+
+    /* ── Herramientas: validador NIF ─────────────── */
+    .nif-input-row {
+      display: flex; gap: 6px; padding: 10px 12px 0;
+    }
+    .nif-input {
+      flex: 1; padding: 7px 9px; border: 1.5px solid #e2e6f0;
+      border-radius: 6px; font-size: 12px; font-family: monospace;
+      color: #1a1a2e; background: #fafbff; text-transform: uppercase;
+    }
+    .nif-input:focus { outline: none; border-color: #1e3a5f; background: #fff; }
+    .btn-nif {
+      padding: 7px 12px; background: #1e3a5f; color: #fff;
+      border: none; border-radius: 6px; font-size: 11px;
+      font-weight: 700; cursor: pointer; flex-shrink: 0;
+    }
+    .btn-nif:hover { background: #2a5080; }
+    .nif-hint {
+      padding: 4px 12px 8px; font-size: 10px; color: #999;
+    }
+    .nif-resultados {
+      margin: 0 12px 12px; border-radius: 8px; overflow: hidden;
+      border: 1.5px solid #e2e6f0; display: none;
+    }
+    .nif-fila {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-bottom: 1px solid #f0f2f8;
+      font-size: 11px;
+    }
+    .nif-fila:last-child { border-bottom: none; }
+    .nif-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+      border-radius: 99px; flex-shrink: 0;
+    }
+    .nif-badge.valido   { background: #e8f5e9; color: #2e7d32; }
+    .nif-badge.invalido { background: #fce4ec; color: #c62828; }
+    .nif-id   { font-family: monospace; font-weight: 700; min-width: 120px; flex-shrink: 0; }
+    .nif-msg  { color: #555; font-size: 10.5px; }
+
+    /* ── Herramientas: defectos ──────────────────── */
+    .def-filtros {
+      padding: 10px 12px 0;
+    }
+    .def-buscar {
+      width: 100%; padding: 7px 9px; border: 1.5px solid #e2e6f0;
+      border-radius: 6px; font-size: 11px; color: #1a1a2e;
+      background: #fafbff; font-family: inherit; margin-bottom: 6px;
+    }
+    .def-buscar:focus { outline: none; border-color: #1e3a5f; background: #fff; }
+    .def-cats {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px;
+    }
+    .def-cat-btn {
+      padding: 3px 8px; border: 1.5px solid #c5cde0; border-radius: 99px;
+      font-size: 10px; font-weight: 600; color: #5a6a8a;
+      background: #fff; cursor: pointer; font-family: inherit;
+      transition: all .15s;
+    }
+    .def-cat-btn.activa {
+      background: #1e3a5f; color: #fff; border-color: #1e3a5f;
+    }
+    .def-lista { margin: 0 12px 12px; }
+    .def-item {
+      background: #fff; border: 1.5px solid #e2e6f0;
+      border-radius: 8px; margin-bottom: 6px; overflow: hidden;
+    }
+    .def-item-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 10px; cursor: pointer;
+      transition: background .15s;
+    }
+    .def-item-header:hover { background: #f7f8fc; }
+    .def-suspende {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .def-suspende.suspende { background: #f44336; }
+    .def-suspende.nosusp   { background: #ff9800; }
+    .def-titulo { flex: 1; font-size: 11px; font-weight: 600; color: #1a1a2e; }
+    .def-fund   { font-size: 10px; color: #8a94ae; flex-shrink: 0; }
+    .def-body   { display: none; border-top: 1px solid #f0f2f8; }
+    .def-body.abierto { display: block; }
+    .def-texto  {
+      padding: 8px 10px; font-size: 10.5px; color: #444;
+      line-height: 1.55; white-space: pre-wrap; font-family: inherit;
+      background: #fafbff;
+    }
+    .def-acciones { padding: 6px 10px; display: flex; gap: 6px; border-top: 1px solid #f0f2f8; }
+    .btn-def-copiar {
+      padding: 4px 10px; background: #1e3a5f; color: #fff;
+      border: none; border-radius: 5px; font-size: 10px;
+      font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .btn-def-copiar:hover  { background: #2a5080; }
+    .btn-def-copiar.copiado { background: #2e7d32; }
+    .def-vacio { text-align: center; padding: 20px; color: #bbb; font-size: 11px; }
+
+    /* ── GML: concordancia ───────────────────────── */
+    .gml-concordancia {
+      margin: 8px 12px 0;
+      background: #fff;
+      border: 1.5px solid #e2e6f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .gml-conc-header {
+      padding: 8px 12px;
+      background: #f7f8fc;
+      border-bottom: 1px solid #e2e6f0;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: #5a6a8a;
+    }
+    .gml-conc-body { padding: 10px 12px; }
+    .gml-conc-fila { margin-bottom: 8px; }
+    .gml-conc-label {
+      display: block; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+      color: #8a94ae; margin-bottom: 3px;
+    }
+    .gml-conc-input {
+      width: 100%; padding: 6px 9px; border: 1.5px solid #e2e6f0;
+      border-radius: 6px; font-size: 11px; color: #1a1a2e;
+      background: #fafbff; font-family: inherit;
+    }
+    .gml-conc-input:focus { outline: none; border-color: #1e3a5f; background: #fff; }
+    .gml-conc-textarea {
+      width: 100%; padding: 6px 9px; border: 1.5px solid #e2e6f0;
+      border-radius: 6px; font-size: 10.5px; color: #1a1a2e;
+      background: #fafbff; font-family: inherit; resize: vertical; min-height: 60px;
+    }
+    .gml-conc-textarea:focus { outline: none; border-color: #1e3a5f; background: #fff; }
+    .btn-gml-conc {
+      display: block; width: 100%; padding: 8px; margin-top: 4px;
+      background: #1e3a5f; color: #fff; border: none; border-radius: 6px;
+      font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .btn-gml-conc:hover { background: #2a5080; }
+    .gml-conc-resultado {
+      margin-top: 8px; padding: 8px 10px; border-radius: 6px;
+      font-size: 11px; line-height: 1.5; display: none;
+    }
+    .gml-conc-resultado.ok    { background: #e8f5e9; color: #2e7d32; border-left: 3px solid #4caf50; }
+    .gml-conc-resultado.aviso { background: #fff8e1; color: #b45309; border-left: 3px solid #ff9800; }
+    .gml-conc-resultado.error { background: #fce4ec; color: #c62828; border-left: 3px solid #f44336; }
+    .gml-linderos-result { margin-top: 6px; }
+    .gml-lindero-fila {
+      display: flex; gap: 6px; font-size: 10px; padding: 3px 0;
+      border-bottom: 1px solid #f0f2f8;
+    }
+    .gml-lindero-fila:last-child { border-bottom: none; }
+    .gml-lindero-dir { font-weight: 700; min-width: 40px; color: #555; text-transform: uppercase; }
+    .gml-lindero-val { color: #1a1a2e; }
+    .gml-lindero-vacio { color: #bbb; font-style: italic; }
   </style>
 </head>
 <body>
@@ -916,6 +1071,7 @@
   <button class="tab-btn"        id="tabPlazos">⏱ Plazos</button>
   <button class="tab-btn"        id="tabGml">🌍 GML</button>
   <button class="tab-btn"        id="tabFactura">🧾 Factura</button>
+  <button class="tab-btn"        id="tabHerramientas">🛠️ Útil</button>
 </div>
 
 <!-- ══ PESTAÑA: ANÁLISIS ══════════════════════ -->
@@ -1175,6 +1331,31 @@
       📄 Generar informe de validación PDF
     </button>
 
+    <!-- ── Concordancia GML ↔ descripción literal ── -->
+    <div class="gml-concordancia">
+      <div class="gml-conc-header">📐 Concordancia GML ↔ escritura</div>
+      <div class="gml-conc-body">
+        <div class="gml-conc-fila">
+          <label class="gml-conc-label">Superficie en la escritura</label>
+          <input class="gml-conc-input" id="gmlConcSupEsc"
+            placeholder="Ej: 125,50 m²  o  0,1255 ha  o  125.50">
+        </div>
+        <div class="gml-conc-fila">
+          <label class="gml-conc-label">Descripción literal de linderos (opcional)</label>
+          <textarea class="gml-conc-textarea" id="gmlConcLinderos"
+            placeholder="Pega aquí el párrafo de linderos de la escritura para extraerlos automáticamente…"></textarea>
+        </div>
+        <button class="btn-gml-conc" id="btnGmlConc">
+          🔍 Comparar con GML cargado
+        </button>
+        <div class="gml-conc-resultado" id="gmlConcResult"></div>
+        <div class="gml-linderos-result" id="gmlLinderosResult" style="display:none">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#8a94ae;margin-bottom:4px;margin-top:8px;">Linderos extraídos de la escritura</div>
+          <div id="gmlLinderosFila"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </div><!-- /panelGml -->
@@ -1304,6 +1485,35 @@
   </div><!-- /facturaContenido -->
 
 </div><!-- /panelFactura -->
+
+<!-- ══ PESTAÑA: HERRAMIENTAS ═══════════════════════ -->
+<div class="tab-panel" id="panelHerramientas">
+
+  <!-- ── Validador NIF / NIE / CIF ── -->
+  <div class="seccion" style="margin:12px 12px 10px">
+    <div class="seccion-header">🆔 Validador NIF / NIE / CIF</div>
+    <div class="nif-input-row">
+      <input class="nif-input" id="nifInput" type="text"
+        placeholder="12345678Z  X1234567A  B12345678…"
+        autocomplete="off" spellcheck="false">
+      <button class="btn-nif" id="btnNifValidar">Validar</button>
+    </div>
+    <div class="nif-hint">Puedes pegar varios separados por comas, espacios o saltos de línea</div>
+    <div class="nif-resultados" id="nifResultados"></div>
+  </div>
+
+  <!-- ── Biblioteca de defectos tipificados ── -->
+  <div class="seccion" style="margin:0 12px 12px">
+    <div class="seccion-header">📋 Defectos tipificados de calificación</div>
+    <div class="def-filtros">
+      <input class="def-buscar" id="defBuscar" type="text"
+        placeholder="Buscar defecto, fundamento legal…">
+      <div class="def-cats" id="defCats"></div>
+    </div>
+    <div class="def-lista" id="defLista"></div>
+  </div>
+
+</div><!-- /panelHerramientas -->
 
 <footer>Datos procesados en local · Sin envío a terceros</footer>
 

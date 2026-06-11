@@ -721,3 +721,89 @@ export function generarInformeGML(nombreFichero, parcelas, checks, vecinas = [])
 <script>window.onload = function(){ window.print(); };</script>
 </body></html>`;
 }
+
+// ─────────────────────────────────────────────────────────────
+// CONCORDANCIA GML ↔ DESCRIPCIÓN LITERAL (v0.3.3)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Compara la superficie calculada del GML con la descrita en el título.
+ * Aplica los umbrales de la doctrina registral:
+ *   ≤ 1 %  → concordancia plena
+ *   1–10 % → discordancia moderada (revisar)
+ *   > 10 % → discordancia significativa (posible exceso de cabida art. 201 LH)
+ *
+ * @param {number} supGML        — superficie calculada del GML en m²
+ * @param {string|number} rawEsc — superficie indicada en el título (m², ha o con unidad)
+ * @returns {{ ok:boolean, nivel:'ok'|'aviso'|'error', msg:string, supGML:number, supEsc:number|null, diff:number|null, pct:number|null }}
+ */
+export function concordanciaSuperficie(supGML, rawEsc) {
+  const texto = String(rawEsc || '').trim().replace(',', '.');
+
+  // Normalizar unidades
+  let supEs = null;
+  const numM = texto.match(/([\d.]+)\s*(?:m(?:etros?(?:\s+cuadrados?)?)?²?|m2)/i);
+  const numHa = texto.match(/([\d.]+)\s*h(?:ectáreas?|a\.?)/i);
+  const numA  = texto.match(/([\d.]+)\s*á(?:reas?|a\.?)/i);
+  const numRaw = texto.match(/^([\d.]+)$/);
+
+  if (numHa)      supEs = parseFloat(numHa[1]) * 10000;
+  else if (numA)  supEs = parseFloat(numA[1])  * 100;
+  else if (numM)  supEs = parseFloat(numM[1]);
+  else if (numRaw) supEs = parseFloat(numRaw[1]);
+
+  if (supEs === null || isNaN(supEs) || supEs <= 0) {
+    return { ok: false, nivel: 'aviso', msg: 'Superficie de escritura no interpretable — introduce el valor en m²', supGML, supEsc: null, diff: null, pct: null };
+  }
+
+  const diff = Math.abs(supGML - supEs);
+  const pct  = (diff / supEs) * 100;
+
+  if (pct <= 1) {
+    return {
+      ok: true, nivel: 'ok',
+      msg: `✅ Concordancia plena: diferencia de ${diff.toFixed(2)} m² (${pct.toFixed(2)}%)`,
+      supGML, supEsc: supEs, diff, pct,
+    };
+  } else if (pct <= 10) {
+    return {
+      ok: false, nivel: 'aviso',
+      msg: `⚠️ Discordancia moderada: ${diff.toFixed(2)} m² (${pct.toFixed(2)}%) — revisar descripción y posible rectificación del art. 201 LH`,
+      supGML, supEsc: supEs, diff, pct,
+    };
+  } else {
+    return {
+      ok: false, nivel: 'error',
+      msg: `🔴 Discordancia significativa: ${diff.toFixed(2)} m² (${pct.toFixed(2)}%) — posible exceso de cabida (arts. 201-202 LH)`,
+      supGML, supEsc: supEs, diff, pct,
+    };
+  }
+}
+
+/**
+ * Extrae los linderos cardinales de la descripción literal de la escritura.
+ * Reconoce Norte/Naciente/Sur/Poniente y sus sinónimos habituales en escrituras.
+ *
+ * @param {string} texto — descripción de la finca
+ * @returns {{ norte:string|null, sur:string|null, este:string|null, oeste:string|null }}
+ */
+export function extraerLinderos(texto) {
+  if (!texto) return { norte: null, sur: null, este: null, oeste: null };
+
+  const t = texto;
+  const fin = '(?=\\s+[Aa]l?\\s+(?:Norte|Sur|Este|Oeste|Naciente|Poniente|Levante|Mediodía|Septentrión|Occidente)|[.;]|$)';
+
+  const pats = {
+    norte: new RegExp('[Aa]l?\\s+(?:Norte|Septentrión|Septentrional)[,:\\s]+([\\s\\S]+?)' + fin, 'i'),
+    sur:   new RegExp('[Aa]l?\\s+(?:Sur|Mediodía|Meridional)[,:\\s]+([\\s\\S]+?)' + fin, 'i'),
+    este:  new RegExp('[Aa]l?\\s+(?:Este|Naciente|Levante|Oriente)[,:\\s]+([\\s\\S]+?)' + fin, 'i'),
+    oeste: new RegExp('[Aa]l?\\s+(?:Oeste|Poniente|Occidente|Ocaso)[,:\\s]+([\\s\\S]+?)' + fin, 'i'),
+  };
+
+  const result = {};
+  for (const [dir, re] of Object.entries(pats)) {
+    const m = t.match(re);
+    result[dir] = m ? m[1].replace(/\s+/g, ' ').trim().slice(0, 150) : null;
+  }
+  return result;
+}
