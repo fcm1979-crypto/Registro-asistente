@@ -1,0 +1,1312 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro Asistente</title>
+  <style>
+    /* ── Reset y base ────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      font-size: 12px;
+      background: #f5f6fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ── Cabecera ────────────────────────────── */
+    header {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 12px 14px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header .logo { font-size: 18px; }
+    header h1 { font-size: 13px; font-weight: 700; letter-spacing: 0.02em; }
+    header .subtitle { font-size: 10px; opacity: 0.7; margin-top: 1px; }
+
+    /* ── Carga manual ────────────────────────── */
+    .upload-zone {
+      margin: 12px;
+      border: 2px dashed #c5cde0;
+      border-radius: 10px;
+      padding: 16px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #fff;
+    }
+    .upload-zone:hover { border-color: #1e3a5f; background: #f0f4ff; }
+    .upload-zone .icon { font-size: 22px; margin-bottom: 4px; }
+    .upload-zone p { font-size: 11px; color: #666; }
+    .upload-zone strong { color: #1e3a5f; }
+    #fileInput { display: none; }
+
+    /* ── Estado / spinner ────────────────────── */
+    .estado {
+      display: none;
+      margin: 0 12px 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      align-items: center;
+      gap: 8px;
+    }
+    .estado.procesando { display: flex; background: #e3f2fd; color: #1565c0; }
+    .estado.ok         { display: flex; background: #e8f5e9; color: #2e7d32; }
+    .estado.error      { display: flex; background: #fce4ec; color: #c62828; }
+
+    .estado .spinner { display: none; }
+    .estado.procesando .spinner { display: block; }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid currentColor;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Secciones de resultado ──────────────── */
+    .seccion {
+      background: #fff;
+      border-radius: 10px;
+      margin: 0 12px 10px;
+      overflow: hidden;
+      border: 1.5px solid #e2e6f0;
+    }
+
+    .seccion-header {
+      padding: 9px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #5a6a8a;
+      background: #f7f8fc;
+      border-bottom: 1px solid #e2e6f0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Campos individuales ─────────────────── */
+    .campo {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #f0f2f8;
+    }
+    .campo:last-child { border-bottom: none; }
+
+    .campo-label {
+      font-size: 10px;
+      color: #8a94ae;
+      min-width: 110px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .campo-valor {
+      font-size: 12px;
+      color: #1a1a2e;
+      flex: 1;
+      word-break: break-word;
+    }
+    .campo-valor.vacio { color: #bbb; font-style: italic; }
+
+    /* ── Indicador de confianza ──────────────── */
+    .conf {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .conf.high   { background: #4caf50; }
+    .conf.medium { background: #ff9800; }
+    .conf.low    { background: #f44336; }
+
+    /* ── Semáforo Catastro ───────────────────── */
+    .catastro-resultado {
+      padding: 10px 12px;
+    }
+
+    .alerta {
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    .alerta.ok     { background: #e8f5e9; color: #2e7d32; border-left: 3px solid #4caf50; }
+    .alerta.aviso  { background: #fff8e1; color: #e65100; border-left: 3px solid #ff9800; }
+    .alerta.error  { background: #fce4ec; color: #c62828; border-left: 3px solid #f44336; }
+
+    .btn-mapa {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 8px;
+      padding: 5px 10px;
+      background: #1e3a5f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn-mapa:hover { background: #2a5080; }
+
+    /* ── Tipo operación badge ────────────────── */
+    .badge-tipo {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      background: #e8eaf6;
+      color: #283593;
+      text-transform: capitalize;
+    }
+
+    /* ── Estado vacío ────────────────────────── */
+    #resultado { display: none; }
+    #vacio {
+      text-align: center;
+      padding: 30px 20px;
+      color: #aaa;
+      font-size: 11px;
+    }
+    #vacio .icon { font-size: 32px; margin-bottom: 8px; }
+
+    /* ── Pestañas ────────────────────────────── */
+    .tabs {
+      display: flex;
+      background: #162d4a;
+      padding: 0 12px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 2px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: rgba(255,255,255,0.5);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn.activa {
+      color: #fff;
+      border-bottom-color: #4fc3f7;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.activo { display: block; }
+
+    /* ── Comparador ──────────────────────────── */
+    .comp-zonas {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px 12px 0;
+    }
+    .comp-zona {
+      border: 2px dashed #c5cde0;
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      background: #fff;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .comp-zona:hover { border-color: #1e3a5f; background: #f0f4ff; }
+    .comp-zona.cargado { border-color: #4caf50; border-style: solid; background: #f1f8f1; }
+    .comp-zona .zona-icono { font-size: 20px; margin-bottom: 4px; }
+    .comp-zona .zona-label { font-size: 10px; font-weight: 700; color: #5a6a8a;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+    .comp-zona .zona-nombre { font-size: 10px; color: #2e7d32; word-break: break-all; }
+    .comp-zona .zona-hint { font-size: 10px; color: #999; }
+
+    .btn-comparar {
+      display: block;
+      width: calc(100% - 24px);
+      margin: 10px 12px;
+      padding: 9px;
+      background: #1e3a5f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-comparar:hover { background: #2a5080; }
+    .btn-comparar:disabled { background: #c5cde0; cursor: not-allowed; }
+
+    /* Tabla de comparación */
+    .comp-resumen {
+      margin: 0 12px 8px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .comp-resumen.verde   { background:#e8f5e9; color:#2e7d32; border-left:3px solid #4caf50; }
+    .comp-resumen.naranja { background:#fff8e1; color:#b45309; border-left:3px solid #ff9800; }
+    .comp-resumen.rojo    { background:#fce4ec; color:#c62828; border-left:3px solid #f44336; }
+
+    .comp-tabla { margin: 0 12px 12px; border-radius: 8px; overflow: hidden;
+      border: 1.5px solid #e2e6f0; }
+    .comp-fila-header {
+      display: grid;
+      grid-template-columns: 90px 1fr 1fr;
+      background: #f7f8fc;
+      border-bottom: 1px solid #e2e6f0;
+      padding: 6px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #8a94ae;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      gap: 6px;
+    }
+    .comp-fila {
+      display: grid;
+      grid-template-columns: 90px 1fr 1fr;
+      border-bottom: 1px solid #f0f2f8;
+      gap: 6px;
+      padding: 7px 8px;
+      align-items: start;
+    }
+    .comp-fila:last-child { border-bottom: none; }
+    .comp-fila.discrepancia { background: #fff8f8; }
+    .comp-fila.aviso        { background: #fffdf0; }
+
+    .comp-campo { font-size: 10px; font-weight: 700; color: #8a94ae;
+      text-transform: uppercase; letter-spacing: 0.03em; padding-top: 1px; }
+    .comp-val { font-size: 11px; color: #1a1a2e; word-break: break-word; }
+    .comp-val.vacio { color: #bbb; font-style: italic; }
+    .comp-indicador {
+      grid-column: 1 / -1;
+      font-size: 10px;
+      padding: 3px 0 0 90px;
+      color: #c62828;
+      line-height: 1.4;
+    }
+    .comp-indicador.aviso { color: #b45309; }
+
+    /* ── Calificación asistida ───────────────── */
+    .check-item {
+      display: flex;
+      gap: 10px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #f0f2f8;
+      align-items: flex-start;
+    }
+    .check-item:last-child { border-bottom: none; }
+
+    .check-icono { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+    .check-body  { flex: 1; }
+    .check-titulo  { font-size: 11px; font-weight: 600; line-height: 1.3; }
+    .check-detalle { font-size: 10px; color: #777; margin-top: 2px; line-height: 1.4; }
+
+    .check-item.verde   .check-titulo { color: #2e7d32; }
+    .check-item.naranja .check-titulo { color: #b45309; }
+    .check-item.rojo    .check-titulo { color: #c62828; }
+    .check-acciones { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .btn-check-mini {
+      display: inline-block; padding: 4px 9px; font-size: 10px; font-weight: 600;
+      color: #1e3a5f; background: #fff; border: 1.2px solid #1e3a5f; border-radius: 6px;
+      cursor: pointer; text-decoration: none; transition: background .15s;
+      font-family: inherit;
+    }
+    .btn-check-mini:hover { background: #f0f4ff; }
+
+    /* Resumen ejecutivo */
+    .resumen-calif {
+      margin: 10px 12px 0;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .resumen-calif.verde   { background: #e8f5e9; color: #2e7d32; border-left: 3px solid #4caf50; }
+    .resumen-calif.naranja { background: #fff8e1; color: #b45309; border-left: 3px solid #ff9800; }
+    .resumen-calif.rojo    { background: #fce4ec; color: #c62828; border-left: 3px solid #f44336; }
+
+    /* Área de notas del registrador */
+    .obs-area {
+      padding: 10px 12px 12px;
+      border-top: 1px solid #f0f2f8;
+    }
+    .obs-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #8a94ae;
+      margin-bottom: 6px;
+      display: block;
+    }
+    .obs-textarea {
+      width: 100%;
+      min-height: 72px;
+      padding: 8px;
+      border: 1.5px solid #e2e6f0;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: inherit;
+      color: #1a1a2e;
+      resize: vertical;
+      background: #fafbff;
+    }
+    .obs-textarea:focus {
+      outline: none;
+      border-color: #1e3a5f;
+      background: #fff;
+    }
+
+    /* ── Modal borrador ──────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 100;
+      align-items: flex-end;
+    }
+    .modal-overlay.abierto { display: flex; }
+    .modal-box {
+      background: #fff;
+      width: 100%;
+      max-height: 85vh;
+      border-radius: 14px 14px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: #1e3a5f;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .modal-acciones {
+      display: flex;
+      gap: 8px;
+      padding: 8px 12px;
+      border-bottom: 1px solid #e2e6f0;
+      background: #f7f8fc;
+    }
+    .btn-accion {
+      flex: 1;
+      padding: 7px;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-copiar   { background: #1e3a5f; color: #fff; }
+    .btn-copiar:hover { background: #2a5080; }
+    .btn-copiar.copiado { background: #2e7d32; }
+    .modal-texto {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 10.5px;
+      line-height: 1.6;
+      color: #1a1a2e;
+      white-space: pre-wrap;
+      background: #fafbff;
+    }
+
+    /* Botón generar borrador */
+    .btn-borrador {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: calc(100% - 24px);
+      margin: 0 12px 12px;
+      padding: 9px;
+      background: #f0f4ff;
+      color: #1e3a5f;
+      border: 1.5px solid #c5cde0;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-borrador:hover { background: #e3eaff; border-color: #1e3a5f; }
+
+    /* ── Plazos ──────────────────────────────── */
+    .plazo-input-group {
+      padding: 10px 12px;
+      background: #fff;
+      border-radius: 10px;
+      margin: 10px 12px 0;
+      border: 1.5px solid #e2e6f0;
+    }
+    .plazo-input-group label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #8a94ae;
+      margin-bottom: 5px;
+    }
+    .plazo-input-group input[type="date"] {
+      width: 100%;
+      padding: 7px 9px;
+      border: 1.5px solid #e2e6f0;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #1a1a2e;
+      background: #fafbff;
+    }
+    .plazo-input-group input[type="date"]:focus {
+      outline: none;
+      border-color: #1e3a5f;
+    }
+    .plazo-hint {
+      font-size: 10px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .plazos-lista {
+      margin: 10px 12px 0;
+    }
+    .plazo-item {
+      background: #fff;
+      border-radius: 8px;
+      border: 1.5px solid #e2e6f0;
+      margin-bottom: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .plazo-item.urgente  { border-color: #f44336; background: #fff8f8; }
+    .plazo-item.proximo  { border-color: #ff9800; background: #fffdf0; }
+    .plazo-item.ok       { border-color: #4caf50; background: #f1f8f1; }
+    .plazo-item.vencido  { border-color: #bbb;    background: #f5f5f5; }
+
+    .plazo-contador {
+      text-align: center;
+      min-width: 42px;
+      flex-shrink: 0;
+    }
+    .plazo-dias {
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .plazo-item.urgente  .plazo-dias { color: #c62828; }
+    .plazo-item.proximo  .plazo-dias { color: #b45309; }
+    .plazo-item.ok       .plazo-dias { color: #2e7d32; }
+    .plazo-item.vencido  .plazo-dias { color: #999;    }
+    .plazo-dias-label { font-size: 9px; color: #999; text-transform: uppercase; }
+
+    .plazo-info { flex: 1; }
+    .plazo-nombre { font-size: 11px; font-weight: 700; color: #1a1a2e; }
+    .plazo-item.urgente .plazo-nombre { color: #c62828; }
+    .plazo-fecha  { font-size: 10px; color: #666; margin-top: 2px; }
+    .plazo-base   { font-size: 10px; color: #aaa; }
+
+    /* Documentación complementaria */
+    .doc-comp-lista {
+      margin: 10px 12px 12px;
+      background: #fff;
+      border: 1.5px solid #e2e6f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .doc-comp-header {
+      padding: 8px 12px;
+      background: #f7f8fc;
+      border-bottom: 1px solid #e2e6f0;
+      font-size: 11px;
+      font-weight: 700;
+      color: #5a6a8a;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .doc-comp-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-bottom: 1px solid #f0f2f8;
+      font-size: 11px;
+    }
+    .doc-comp-item:last-child { border-bottom: none; }
+    .doc-comp-item input[type="checkbox"] { flex-shrink: 0; accent-color: #1e3a5f; }
+    .doc-comp-item.obligatorio { color: #1a1a2e; }
+    .doc-comp-item.opcional    { color: #666; }
+    .doc-comp-badge {
+      font-size: 9px;
+      padding: 1px 5px;
+      border-radius: 99px;
+      flex-shrink: 0;
+    }
+    .doc-comp-badge.ob  { background: #fce4ec; color: #c62828; }
+    .doc-comp-badge.op  { background: #f5f5f5; color: #999; }
+
+    .plazos-vacio {
+      text-align: center;
+      padding: 30px 20px;
+      color: #aaa;
+      font-size: 11px;
+    }
+    .plazos-vacio .icon { font-size: 28px; margin-bottom: 8px; }
+
+    /* ── Factura ─────────────────────────────── */
+    .fact-seccion {
+      background: #fff;
+      border-radius: 10px;
+      margin: 10px 12px 0;
+      border: 1.5px solid #e2e6f0;
+      overflow: hidden;
+    }
+    .fact-seccion-header {
+      padding: 8px 12px;
+      background: #f7f8fc;
+      border-bottom: 1px solid #e2e6f0;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #5a6a8a;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    .fact-seccion-body { padding: 10px 12px; }
+    .fact-campo {
+      margin-bottom: 8px;
+    }
+    .fact-label {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #8a94ae;
+      margin-bottom: 3px;
+    }
+    .fact-input {
+      width: 100%;
+      padding: 6px 9px;
+      border: 1.5px solid #e2e6f0;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #1a1a2e;
+      background: #fafbff;
+      font-family: inherit;
+    }
+    .fact-input:focus { outline: none; border-color: #1e3a5f; background: #fff; }
+    .fact-fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .fact-select {
+      width: 100%;
+      padding: 6px 9px;
+      border: 1.5px solid #e2e6f0;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #1a1a2e;
+      background: #fafbff;
+    }
+    .fact-select:focus { outline: none; border-color: #1e3a5f; }
+    .fact-valor-row {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+    }
+    .fact-valor-row .fact-input { flex: 1; }
+    .btn-recalc {
+      padding: 6px 10px;
+      background: #1e3a5f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .btn-recalc:hover { background: #2a5080; }
+
+    /* Desglose tabla */
+    .fact-desglose {
+      margin: 10px 12px 0;
+      background: #fff;
+      border: 1.5px solid #e2e6f0;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .fact-tabla { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    .fact-tabla thead th {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 7px 8px;
+      text-align: left;
+      font-size: 10px;
+    }
+    .fact-tabla tbody tr:nth-child(even) { background: #f5f6fa; }
+    .fact-tabla td {
+      padding: 7px 8px;
+      border-bottom: 1px solid #f0f2f8;
+      vertical-align: middle;
+    }
+    .fact-tabla td:last-child { text-align: right; font-weight: 600; }
+    .fact-tabla tr:last-child td { border-bottom: none; }
+    .fact-totales { padding: 10px 12px; border-top: 2px solid #e2e6f0; }
+    .fact-tot-fila {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      padding: 3px 0;
+      color: #555;
+    }
+    .fact-tot-fila.total {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1e3a5f;
+      border-top: 2px solid #1e3a5f;
+      margin-top: 6px;
+      padding-top: 8px;
+    }
+
+    .btn-generar-fact {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: calc(100% - 24px);
+      margin: 10px 12px 12px;
+      padding: 10px;
+      background: #1e3a5f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-generar-fact:hover { background: #2a5080; }
+    .btn-generar-fact:disabled { background: #c5cde0; cursor: not-allowed; }
+
+    /* ── Panel GML ─────────────────────────────── */
+    .gml-intro {
+      margin: 12px; padding: 10px 12px; font-size: 11px; line-height: 1.5;
+      background: #f0f4ff; border-left: 3px solid #1e3a5f; border-radius: 0 6px 6px 0;
+      color: #444;
+    }
+    .gml-zone { margin: 0 12px 12px; }
+    .gml-resumen {
+      margin: 0 12px 10px; padding: 10px 12px; border-radius: 8px;
+      font-size: 12.5px; font-weight: 700; text-align: center;
+    }
+    .gml-resumen.apto      { background: #e8f5e9; color: #1d7a3e; }
+    .gml-resumen.avisos    { background: #fff8e1; color: #a86b00; }
+    .gml-resumen.noapto    { background: #fce4ec; color: #b3261e; }
+    .gml-checks { margin: 0 12px; }
+    .gml-check {
+      display: flex; gap: 8px; padding: 8px 10px; margin-bottom: 6px;
+      border-radius: 6px; font-size: 11px; line-height: 1.45;
+      background: #f7f8fb; border-left: 3px solid #ccc;
+    }
+    .gml-check.ok    { border-left-color: #2e7d32; background: #f3faf4; }
+    .gml-check.aviso { border-left-color: #f9a825; background: #fffdf3; }
+    .gml-check.error { border-left-color: #c62828; background: #fdf4f5; }
+    .gml-check .gml-ico { font-size: 13px; flex-shrink: 0; }
+    .gml-check strong { display: block; font-size: 11.5px; margin-bottom: 2px; color: #222; }
+    .gml-check span { color: #555; }
+    .btn-gml-catastro {
+      display: block; width: calc(100% - 24px); margin: 10px 12px 4px;
+      padding: 9px; background: #fff; color: #1e3a5f; font-size: 11.5px;
+      font-weight: 600; border: 1.5px solid #1e3a5f; border-radius: 8px;
+      cursor: pointer; transition: background .15s;
+    }
+    .btn-gml-catastro:hover { background: #f0f4ff; }
+    .btn-gml-catastro:disabled { opacity: .5; cursor: not-allowed; }
+    .gml-hint { margin: 0 14px 8px; font-size: 10px; color: #888; }
+    .gml-mapa { margin: 0 12px 8px; border: 1px solid #e0e3ea; border-radius: 8px; overflow: hidden; }
+    .gml-mapa:empty { display: none; }
+    .gml-tabla-wrap { margin: 0 12px 10px; }
+    .gml-parcelas-tabla { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    .gml-parcelas-tabla th {
+      background: #1e3a5f; color: #fff; padding: 4px 6px; text-align: left;
+      font-size: 9.5px; font-weight: 600;
+    }
+    .gml-parcelas-tabla td { padding: 4px 6px; border-bottom: 1px solid #eceef3; }
+    .gml-parcelas-tabla tr:nth-child(even) { background: #f7f8fb; }
+
+    .fact-vacio {
+      text-align: center;
+      padding: 30px 20px;
+      color: #aaa;
+      font-size: 11px;
+    }
+    .fact-vacio .icon { font-size: 28px; margin-bottom: 8px; }
+    .fact-cli-val {
+      font-size: 12px;
+      color: #1a1a2e;
+      font-weight: 600;
+      min-height: 16px;
+    }
+    .fact-cli-val.vacio { color: #bbb; font-style: italic; font-weight: 400; }
+
+    /* ── Footer ──────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 12px;
+      font-size: 10px;
+      color: #ccc;
+    }
+
+    /* ── Pantalla de licencia ─────────────────── */
+    #pantallaLicencia {
+      position: fixed;
+      inset: 0;
+      background: #f5f6fa;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #pantallaLicencia .lic-logo {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    #pantallaLicencia h2 {
+      font-size: 16px;
+      font-weight: 800;
+      color: #1e3a5f;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    #pantallaLicencia p {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    #inputLicencia {
+      width: 100%;
+      padding: 10px 12px;
+      border: 2px solid #c5cde0;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: monospace;
+      text-align: center;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+      outline: none;
+    }
+    #inputLicencia:focus { border-color: #1e3a5f; }
+    #btnActivar {
+      width: 100%;
+      background: #1e3a5f;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 11px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    #btnActivar:disabled { opacity: 0.6; cursor: default; }
+    #licError {
+      font-size: 11px;
+      color: #c62828;
+      text-align: center;
+      min-height: 16px;
+    }
+    #licOk {
+      font-size: 11px;
+      color: #2e7d32;
+      text-align: center;
+      min-height: 16px;
+    }
+    .lic-comprar {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #888;
+      text-align: center;
+    }
+    .lic-comprar a {
+      color: #1e3a5f;
+      font-weight: 700;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── BANNER PRUEBA GRATUITA (visible durante trial) ── -->
+<div id="bannerTrial" style="display:none; background:#b45309; color:#fff; padding:7px 12px; font-size:11px; align-items:center; justify-content:space-between; gap:8px; position:sticky; top:0; z-index:20;">
+  <span>⏳ Prueba gratuita — <strong><span id="trialDias">30</span> días restantes</strong></span>
+  <button onclick="document.getElementById('pantallaLicencia').style.display='flex'" style="background:#fff; color:#b45309; border:none; border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; cursor:pointer;">Activar licencia</button>
+</div>
+
+<!-- ── PANTALLA DE LICENCIA (se oculta al activar) ── -->
+<div id="pantallaLicencia">
+  <div class="lic-logo">⚖️</div>
+  <h2>Registro de la Propiedad Asistente</h2>
+  <p>Introduce tu clave de licencia<br>para activar la extensión.</p>
+  <input type="text" id="inputLicencia" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX" autocomplete="off" spellcheck="false">
+  <button id="btnActivar">Activar licencia</button>
+  <div id="licError"></div>
+  <div id="licOk"></div>
+  <div class="lic-comprar">¿No tienes licencia? <a href="https://fcm1979-crypto.github.io/registro-asistente" target="_blank">Consíguela aquí →</a></div>
+</div>
+
+<header>
+  <span class="logo">⚖️</span>
+  <div>
+    <h1>Registro Asistente</h1>
+    <div class="subtitle">Calificación asistida · 100% local</div>
+  </div>
+</header>
+
+<!-- Pestañas -->
+<div class="tabs">
+  <button class="tab-btn activa" id="tabAnalisis">📄 Análisis</button>
+  <button class="tab-btn"        id="tabComparador">🔄 Comparar</button>
+  <button class="tab-btn"        id="tabPlazos">⏱ Plazos</button>
+  <button class="tab-btn"        id="tabGml">🌍 GML</button>
+  <button class="tab-btn"        id="tabFactura">🧾 Factura</button>
+</div>
+
+<!-- ══ PESTAÑA: ANÁLISIS ══════════════════════ -->
+<div class="tab-panel activo" id="panelAnalisis">
+
+<!-- Zona de carga manual -->
+<div class="upload-zone" id="uploadZone">
+  <div class="icon">📄</div>
+  <p><strong>Arrastra una escritura PDF</strong><br>o haz clic para seleccionarla</p>
+</div>
+<input type="file" id="fileInput" accept=".pdf">
+
+<!-- Estado de procesamiento -->
+<div class="estado" id="estado">
+  <div class="spinner" id="spinner"></div>
+  <span id="estadoTexto">Procesando escritura...</span>
+</div>
+
+<!-- Estado vacío inicial -->
+<div id="vacio">
+  <div class="icon">📋</div>
+  <p>Carga una escritura o abre<br>un PDF en el navegador</p>
+</div>
+
+<!-- Resultado del análisis -->
+<div id="resultado">
+
+  <!-- Tipo de operación -->
+  <div class="seccion" id="secTipo">
+    <div class="seccion-header">📌 Tipo de operación</div>
+    <div class="campo">
+      <span class="campo-label">Operación</span>
+      <span class="campo-valor"><span class="badge-tipo" id="valTipo">—</span></span>
+    </div>
+    <div class="campo">
+      <span class="campo-label">Fecha escritura</span>
+      <span class="campo-valor" id="valFecha">—</span>
+    </div>
+    <div class="campo">
+      <span class="campo-label">Notario</span>
+      <span class="campo-valor" id="valNotario">—</span>
+    </div>
+  </div>
+
+  <!-- Partes -->
+  <div class="seccion">
+    <div class="seccion-header">👤 Partes intervinientes</div>
+    <div class="campo">
+      <span class="campo-label">Titular/es</span>
+      <span class="campo-valor" id="valTitulares">—</span>
+      <span class="conf" id="confTitulares"></span>
+    </div>
+    <div class="campo">
+      <span class="campo-label">DNI / NIF</span>
+      <span class="campo-valor" id="valDNIs">—</span>
+      <span class="conf" id="confDNIs"></span>
+    </div>
+  </div>
+
+  <!-- Finca -->
+  <div class="seccion">
+    <div class="seccion-header">🏠 Descripción de la finca</div>
+    <div class="campo">
+      <span class="campo-label">Ref. Catastral</span>
+      <span class="campo-valor" id="valRC">—</span>
+      <span class="conf" id="confRC"></span>
+    </div>
+    <div class="campo">
+      <span class="campo-label">Superficie</span>
+      <span class="campo-valor" id="valSup">—</span>
+      <span class="conf" id="confSup"></span>
+    </div>
+    <div class="campo">
+      <span class="campo-label">Linderos</span>
+      <span class="campo-valor" id="valLind" style="max-height:80px;overflow:auto;font-size:11px">—</span>
+    </div>
+    <div class="campo">
+      <span class="campo-label">Precio / Valor</span>
+      <span class="campo-valor" id="valPrecio">—</span>
+    </div>
+    <div class="campo">
+      <span class="campo-label">Cargas</span>
+      <span class="campo-valor" id="valCargas">—</span>
+    </div>
+  </div>
+
+  <!-- Catastro -->
+  <div class="seccion">
+    <div class="seccion-header">🗺️ Verificación Catastro</div>
+    <div class="catastro-resultado" id="catastroZona">
+      <span style="color:#bbb;font-size:11px">Introduce o detecta la ref. catastral para consultar...</span>
+    </div>
+  </div>
+
+  <!-- Calificación asistida -->
+  <div id="resumenCalif" class="resumen-calif" style="display:none"></div>
+
+  <div class="seccion" id="secCalificacion" style="display:none">
+    <div class="seccion-header">📋 Calificación asistida</div>
+    <div id="checksZona"></div>
+    <div class="obs-area">
+      <span class="obs-label">✏️ Notas del registrador</span>
+      <textarea class="obs-textarea" id="obsRegistrador"
+        placeholder="Añade aquí tus notas de calificación, defectos adicionales u observaciones..."></textarea>
+    </div>
+  </div>
+
+  <button class="btn-borrador" id="btnBorrador">
+    📝 Generar borrador de nota de calificación
+  </button>
+
+</div><!-- /resultado -->
+
+<!-- Modal borrador nota de calificación -->
+<div class="modal-overlay" id="modalBorrador">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>📝 Borrador · Nota de Calificación</span>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-acciones">
+      <button class="btn-accion btn-copiar" id="btnCopiar">📋 Copiar al portapapeles</button>
+    </div>
+    <div class="modal-texto" id="modalTexto"></div>
+  </div>
+</div>
+
+</div><!-- /panelAnalisis -->
+
+<!-- ══ PESTAÑA: COMPARADOR ════════════════════ -->
+<div class="tab-panel" id="panelComparador">
+
+  <div class="comp-zonas">
+    <!-- Documento A -->
+    <div class="comp-zona" id="zonaA">
+      <div class="zona-icono">📄</div>
+      <div class="zona-label">Escritura</div>
+      <div class="zona-hint" id="hintA">Clic o arrastra</div>
+      <div class="zona-nombre" id="nombreA"></div>
+    </div>
+    <input type="file" id="fileA" accept=".pdf" style="display:none">
+
+    <!-- Documento B -->
+    <div class="comp-zona" id="zonaB">
+      <div class="zona-icono">📋</div>
+      <div class="zona-label">Nota / Asiento</div>
+      <div class="zona-hint" id="hintB">Clic o arrastra</div>
+      <div class="zona-nombre" id="nombreB"></div>
+    </div>
+    <input type="file" id="fileB" accept=".pdf" style="display:none">
+  </div>
+
+  <button class="btn-comparar" id="btnComparar" disabled>
+    🔄 Comparar documentos
+  </button>
+
+  <!-- Estado comparador -->
+  <div class="estado" id="estadoComp">
+    <div class="spinner"></div>
+    <span id="estadoCompTexto">Comparando...</span>
+  </div>
+
+  <!-- Resultado comparación -->
+  <div id="resultadoComp" style="display:none">
+    <div id="compResumen" class="comp-resumen"></div>
+    <div class="comp-tabla" id="compTabla">
+      <div class="comp-fila-header">
+        <span>Campo</span>
+        <span>Doc. A · Escritura</span>
+        <span>Doc. B · Nota/Asiento</span>
+      </div>
+      <div id="compFilas"></div>
+    </div>
+  </div>
+
+</div><!-- /panelComparador -->
+
+<!-- ══ PESTAÑA: PLAZOS ════════════════════════ -->
+<div class="tab-panel" id="panelPlazos">
+
+  <div id="plazosVacio" class="plazos-vacio">
+    <div class="icon">⏱️</div>
+    <p>Analiza primero una escritura<br>en la pestaña Análisis</p>
+  </div>
+
+  <div id="plazosContenido" style="display:none">
+
+    <div class="plazo-input-group">
+      <label>📅 Fecha de presentación (asiento)</label>
+      <input type="date" id="fechaPresentacion">
+      <div class="plazo-hint">Fecha en que el documento se presentó en el Registro</div>
+    </div>
+
+    <div class="plazos-lista" id="plazosLista" style="margin-top:10px;display:none"></div>
+
+    <div id="bloqueDefectos" style="display:none">
+      <div class="plazo-input-group" style="margin-top:8px">
+        <label>📋 Fecha de notificación de defectos</label>
+        <input type="date" id="fechaNotificacion">
+        <div class="plazo-hint">Si se suspendió, ¿cuándo se notificó al presentante?</div>
+      </div>
+      <div class="plazos-lista" id="plazosDefectoLista" style="margin-top:8px"></div>
+    </div>
+
+    <div id="docCompZona" style="display:none">
+      <div class="doc-comp-lista">
+        <div class="doc-comp-header">📎 Documentación complementaria a verificar</div>
+        <div id="docCompItems"></div>
+      </div>
+    </div>
+
+  </div>
+</div><!-- /panelPlazos -->
+
+<!-- ══ PESTAÑA: GML ════════════════════════════ -->
+<div class="tab-panel" id="panelGml">
+
+  <div class="gml-intro">
+    <strong>Validador de georreferenciación</strong> (art. 9.b y 199 LH).
+    Carga el fichero GML aportado con el título y la extensión verificará
+    el sistema de coordenadas, la geometría y los solapes con el parcelario
+    catastral. Todo el análisis se realiza en local.
+  </div>
+
+  <div class="upload-zone gml-zone" id="gmlZone">
+    <div class="icon">🌍</div>
+    <p><strong>Cargar fichero GML</strong></p>
+    <p class="hint">Arrastra aquí el .gml o .xml, o haz click</p>
+    <input type="file" id="gmlInput" accept=".gml,.xml" hidden>
+  </div>
+
+  <div class="estado" id="gmlEstado" style="display:none">
+    <div class="spinner" id="gmlSpinner"></div>
+    <span id="gmlEstadoTexto"></span>
+  </div>
+
+  <div id="gmlResultado" style="display:none">
+
+    <div class="gml-resumen" id="gmlResumen"></div>
+
+    <div class="gml-mapa" id="gmlMapa"></div>
+    <div class="gml-tabla-wrap" id="gmlTabla"></div>
+
+    <div class="gml-checks" id="gmlChecks"></div>
+
+    <button class="btn-gml-catastro" id="btnGmlCatastro">
+      🛰 Cruzar con parcelario catastral (detectar invasión de colindantes)
+    </button>
+    <div class="gml-hint" id="gmlCatastroHint">
+      Descarga las parcelas vecinas del Catastro (WFS INSPIRE) y comprueba
+      si la geometría aportada invade fincas colindantes.
+    </div>
+
+    <div class="gml-checks" id="gmlChecksCatastro"></div>
+
+    <button class="btn-generar-fact" id="btnInformeGml" style="margin-top:12px">
+      📄 Generar informe de validación PDF
+    </button>
+
+  </div>
+
+</div><!-- /panelGml -->
+
+<!-- ══ PESTAÑA: FACTURA ════════════════════════ -->
+<div class="tab-panel" id="panelFactura">
+
+  <div id="facturaVacio" class="fact-vacio">
+    <div class="icon">🧾</div>
+    <p>Analiza primero una escritura<br>en la pestaña Análisis</p>
+  </div>
+
+  <div id="facturaContenido" style="display:none">
+
+    <!-- Datos del Registro (persistentes) -->
+    <div class="fact-seccion">
+      <div class="fact-seccion-header" id="factRegHeader">
+        📋 Datos del Registro <span id="factRegFlecha">▸</span>
+      </div>
+      <div class="fact-seccion-body" id="factRegBody" style="display:none">
+        <div class="fact-campo">
+          <label class="fact-label">Nombre del registrador/a</label>
+          <input class="fact-input" id="factRegNombre" type="text" placeholder="Nombre y apellidos">
+        </div>
+        <div class="fact-fila2">
+          <div class="fact-campo">
+            <label class="fact-label">NIF</label>
+            <input class="fact-input" id="factRegNif" type="text" placeholder="12345678A">
+          </div>
+          <div class="fact-campo">
+            <label class="fact-label">Teléfono</label>
+            <input class="fact-input" id="factRegTelefono" type="text" placeholder="9XX XXX XXX">
+          </div>
+        </div>
+        <div class="fact-campo">
+          <label class="fact-label">Nombre del Registro</label>
+          <input class="fact-input" id="factRegRegistro" type="text" placeholder="Registro de la Propiedad nº X de ...">
+        </div>
+        <div class="fact-campo">
+          <label class="fact-label">Dirección</label>
+          <input class="fact-input" id="factRegDireccion" type="text" placeholder="Calle, número">
+        </div>
+        <div class="fact-campo">
+          <label class="fact-label">Municipio</label>
+          <input class="fact-input" id="factRegMunicipio" type="text" placeholder="Municipio (Provincia)">
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos del cliente (auto-rellenados) -->
+    <div class="fact-seccion" style="margin-top:8px">
+      <div class="fact-seccion-header" style="cursor:default">👤 Datos del cliente</div>
+      <div class="fact-seccion-body">
+        <div class="fact-campo">
+          <label class="fact-label">Nombre / Titular</label>
+          <div class="fact-cli-val vacio" id="factCliNombre">—</div>
+        </div>
+        <div class="fact-fila2">
+          <div class="fact-campo">
+            <label class="fact-label">NIF / DNI</label>
+            <div class="fact-cli-val vacio" id="factCliNif">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cálculo -->
+    <div class="fact-seccion" style="margin-top:8px">
+      <div class="fact-seccion-header" style="cursor:default">🔢 Cálculo de honorarios</div>
+      <div class="fact-seccion-body">
+        <div class="fact-fila2">
+          <div class="fact-campo">
+            <label class="fact-label">Factura nº</label>
+            <input class="fact-input" id="factNumero" type="text" placeholder="2025/001">
+          </div>
+          <div class="fact-campo">
+            <label class="fact-label">Fecha</label>
+            <input class="fact-input" id="factFecha" type="date">
+          </div>
+        </div>
+        <div class="fact-campo">
+          <label class="fact-label">Tipo de operación</label>
+          <select class="fact-select" id="factTipo">
+            <option value="compraventa">Compraventa</option>
+            <option value="hipoteca">Hipoteca</option>
+            <option value="cancelacion">Cancelación de hipoteca</option>
+            <option value="herencia">Herencia / Sucesión</option>
+            <option value="donacion">Donación</option>
+            <option value="agrupacion">Agrupación / División</option>
+            <option value="permuta">Permuta</option>
+            <option value="otra">Otra inscripción</option>
+          </select>
+        </div>
+        <div class="fact-campo">
+          <label class="fact-label">Valor / Base arancel (€)</label>
+          <div class="fact-valor-row">
+            <input class="fact-input" id="factValor" type="number" min="0" step="0.01" placeholder="0,00">
+            <button class="btn-recalc" id="btnFactRecalc">Calcular</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desglose -->
+    <div class="fact-desglose" id="factDesglose" style="display:none">
+      <table class="fact-tabla">
+        <thead>
+          <tr>
+            <th style="width:50%">Concepto</th>
+            <th style="width:28%">Base</th>
+            <th style="width:22%;text-align:right">Importe</th>
+          </tr>
+        </thead>
+        <tbody id="factLineas"></tbody>
+      </table>
+      <div class="fact-totales">
+        <div class="fact-tot-fila"><span>Subtotal honorarios</span><span id="factSubtotal">—</span></div>
+        <div class="fact-tot-fila"><span>IVA (21 %)</span><span id="factIva">—</span></div>
+        <div class="fact-tot-fila total"><span>TOTAL</span><span id="factTotal">—</span></div>
+      </div>
+    </div>
+
+    <button class="btn-generar-fact" id="btnGenerarFactura" disabled>
+      📄 Generar Factura PDF
+    </button>
+
+  </div><!-- /facturaContenido -->
+
+</div><!-- /panelFactura -->
+
+<footer>Datos procesados en local · Sin envío a terceros</footer>
+
+<script type="module" src="sidebar.js"></script>
+</body>
+</html>

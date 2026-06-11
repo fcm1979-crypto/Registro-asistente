@@ -1,0 +1,134 @@
+════════════════════════════════════════════════
+  REGISTRO ASISTENTE — Extensión Chrome v0.1
+  Instrucciones de instalación y uso
+════════════════════════════════════════════════
+
+REQUISITO PREVIO
+────────────────
+Necesitas descargar PDF.js (la librería que lee los PDFs).
+Ve a: https://mozilla.github.io/pdf.js/getting_started/#download
+Descarga la versión "Stable" y copia estos dos archivos
+dentro de la carpeta registro-extension/:
+
+  • pdf.min.js
+  • pdf.worker.min.js
+
+
+ESTRUCTURA DE ARCHIVOS (debe quedar así)
+─────────────────────────────────────────
+registro-extension/
+├── manifest.json
+├── background.js
+├── content.js
+├── sidebar.html
+├── sidebar.js
+├── parser.js
+├── catastro.js
+├── pdf.min.js           ← descargar de PDF.js
+├── pdf.worker.min.js    ← descargar de PDF.js
+└── icons/
+    ├── icon16.png       ← puedes usar cualquier PNG 16×16
+    ├── icon48.png       ← 48×48
+    └── icon128.png      ← 128×128
+
+
+CÓMO INSTALAR EN CHROME
+────────────────────────
+1. Abre Chrome y ve a: chrome://extensions
+2. Activa el modo "Desarrollador" (interruptor arriba a la derecha)
+3. Haz clic en "Cargar extensión sin empaquetar"
+4. Selecciona la carpeta: registro-extension/
+5. La extensión aparecerá en la barra de Chrome con el icono ⚖️
+
+
+CÓMO USAR
+──────────
+OPCIÓN A — Automática (PDF abierto en el navegador):
+  1. Abre cualquier escritura PDF en Chrome (arrastra el archivo
+     a una pestaña, o navega a la URL del PDF del portal notarial)
+  2. Haz clic en el icono ⚖️ de la extensión
+  3. El panel lateral se abre y analiza el documento automáticamente
+
+OPCIÓN B — Manual (arrastra el PDF al panel):
+  1. Haz clic en el icono ⚖️ para abrir el panel lateral
+  2. Arrastra el PDF de la escritura sobre la zona punteada
+     (o haz clic en ella para seleccionar el archivo)
+  3. El análisis comienza de forma instantánea
+
+
+QUÉ EXTRAE AUTOMÁTICAMENTE
+────────────────────────────
+  ✓ Tipo de operación (compraventa, hipoteca, herencia...)
+  ✓ Fecha de la escritura
+  ✓ Nombre del notario
+  ✓ Titular/es (comprador, vendedor, heredero...)
+  ✓ DNI / NIF / NIE de los intervinientes
+  ✓ Referencia catastral
+  ✓ Superficie en m²
+  ✓ Linderos
+  ✓ Precio o valor
+  ✓ Cargas (hipotecas, embargos, servidumbres...)
+
+  + Consulta automática al Catastro con la referencia detectada
+  + Alerta si la superficie difiere más del 10% con el Catastro
+
+
+PRIVACIDAD
+───────────
+  Ningún dato de las escrituras sale de tu ordenador.
+  La única llamada externa es a la API pública del Catastro
+  (ovc.catastro.meh.es), que es un servicio oficial del Estado
+  y no recibe datos personales, solo la referencia catastral.
+
+
+PRÓXIMAS MEJORAS PLANIFICADAS
+──────────────────────────────
+  [ ] Lectura directa del DOM de Experia/Inforeg para comparación
+  [ ] Generación de borrador de nota de defectos
+  [ ] Contador de plazo de calificación (15 días hábiles)
+  [ ] Soporte para escrituras escaneadas (OCR)
+  [ ] Exportar resumen a portapapeles
+
+
+════════════════════════════════════════════════
+
+════════════════════════════════════════════════
+  NOVEDADES v0.3.0 — VALIDADOR GML (art. 199 LH)
+════════════════════════════════════════════════
+
+Nueva pestaña 🌍 GML con validador de georreferenciación:
+
+ARCHIVOS NUEVOS/MODIFICADOS:
+  • gml.js          (NUEVO — parser y validador)
+  • background.js   (añadidos handlers WFS INSPIRE)
+  • sidebar.html    (pestaña + panel + estilos GML)
+  • sidebar.js      (lógica del panel GML)
+  • parser.js       (detecta SEGREGACION/PARCELACION)
+  • manifest.json   (versión 0.3.0)
+
+QUÉ VALIDA:
+  1. Sistema de coordenadas (ETRS89/REGCAN95 UTM,
+     Resolución conjunta DGRN-DGC 26-10-2015)
+  2. Anillos cerrados, vértices duplicados,
+     auto-intersecciones
+  3. Superficie calculada (Gauss) vs declarada
+     vs escritura (alerta exceso de cabida >10%)
+  4. Coherencia ref. catastral GML ↔ escritura
+  5. Falta de finca resto en segregaciones
+     (RR. DGSJFP 24-10-2016 y 11-4-2019)
+  6. SOLAPES con parcelas colindantes vía
+     WFS INSPIRE del Catastro (botón "Cruzar")
+  7. Desplazamientos respecto a la parcela
+     catastral propia (detección de RGA)
+
+FLUJO RECOMENDADO:
+  1º Analizar la escritura (pestaña Análisis)
+  2º Pestaña GML → cargar el fichero .gml
+  3º Botón "Cruzar con parcelario catastral"
+  4º "Generar informe PDF" para adjuntar a la
+     nota de calificación o devolver al técnico
+
+NOTA: la validación es 100% local salvo el cruce
+catastral, que descarga el parcelario público del
+WFS INSPIRE (ovc.catastro.meh.es) sin enviar
+ningún dato de la escritura.
